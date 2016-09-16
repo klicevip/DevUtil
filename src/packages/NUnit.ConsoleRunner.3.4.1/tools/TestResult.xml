@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="10" engine-version="3.4.1.0" clr-version="4.0.30319.42000" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:47Z" duration="1.632482">
+  <command-line><![CDATA[nunit3-console.exe  D:\work\source\DevUtil\src\Panda.DevUtil.Test\bin\Debug\Panda.DevUtil.Test.dll]]></command-line>
+  <test-suite type="Assembly" id="0-1002" name="Panda.DevUtil.Test.dll" fullname="D:\work\source\DevUtil\src\Panda.DevUtil.Test\bin\Debug\Panda.DevUtil.Test.dll" runstate="Runnable" testcasecount="1" result="Passed" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:46Z" duration="1.590925" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="10">
+    <environment framework-version="3.4.1.0" clr-version="4.0.30319.42000" os-version="Microsoft Windows NT 10.0.10586.0" platform="Win32NT" cwd="D:\work\source\DevUtil\src\packages\NUnit.ConsoleRunner.3.4.1\tools" machine-name="DESKTOP-1V614A2" user="hasee" user-domain="DESKTOP-1V614A2" culture="zh-CN" uiculture="zh-CN" os-architecture="x64" />
+    <settings>
+      <setting name="WorkDirectory" value="D:\work\source\DevUtil\src\packages\NUnit.ConsoleRunner.3.4.1\tools" />
+      <setting name="ImageRuntimeVersion" value="4.0.30319" />
+      <setting name="ImageTargetFrameworkName" value=".NETFramework,Version=v4.5" />
+      <setting name="ImageRequiresX86" value="False" />
+      <setting name="ImageRequiresDefaultAppDomainAssemblyResolver" value="False" />
+      <setting name="NumberOfTestWorkers" value="8" />
+    </settings>
+    <properties>
+      <property name="_PID" value="11368" />
+      <property name="_APPDOMAIN" value="test-domain-" />
+    </properties>
+    <test-suite type="TestSuite" id="0-1003" name="Panda" fullname="Panda" runstate="Runnable" testcasecount="1" result="Passed" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:46Z" duration="1.566055" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="10">
+      <test-suite type="TestSuite" id="0-1004" name="DevUtil" fullname="Panda.DevUtil" runstate="Runnable" testcasecount="1" result="Passed" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:46Z" duration="1.562306" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="10">
+        <test-suite type="TestSuite" id="0-1005" name="Test" fullname="Panda.DevUtil.Test" runstate="Runnable" testcasecount="1" result="Passed" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:46Z" duration="1.556306" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="10">
+          <test-suite type="TestFixture" id="0-1000" name="RedisIdempotentCheckerTest" fullname="Panda.DevUtil.Test.RedisIdempotentCheckerTest" classname="Panda.DevUtil.Test.RedisIdempotentCheckerTest" runstate="Runnable" testcasecount="1" result="Passed" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:46Z" duration="1.549675" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="10">
+            <test-case id="0-1001" name="CheckTest" fullname="Panda.DevUtil.Test.RedisIdempotentCheckerTest.CheckTest" methodname="CheckTest" classname="Panda.DevUtil.Test.RedisIdempotentCheckerTest" runstate="Runnable" seed="11363269" result="Passed" start-time="2016-09-16 15:24:45Z" end-time="2016-09-16 15:24:46Z" duration="1.536576" asserts="10" />
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -46,6 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Distributed\Abstract\GetLockOption.cs" />
+    <Compile Include="Distributed\Abstract\ILock.cs" />
+    <Compile Include="Distributed\Abstract\ILockItem.cs" />
     <Compile Include="Idempotent\Abstract\IIdempotentChecker.cs" />
     <Compile Include="Idempotent\RedisIdempotentChecker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

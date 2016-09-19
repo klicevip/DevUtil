@@ -12,18 +12,25 @@ namespace Panda.DevUtil.Idempotent
     public class RedisIdempotentChecker : IIdempotentChecker
     {
         ConnectionMultiplexer _redis = null;
+        int _db = 0;
         public RedisIdempotentChecker() : this(ConfigurationManager.AppSettings["redis"])
         {
         }
 
-        public RedisIdempotentChecker(string connectStr)
+        public RedisIdempotentChecker(string connectStr) : this(connectStr, 0)
+        {
+        }
+
+        public RedisIdempotentChecker(string connectStr, int db)
         {
             _redis = ConnectionMultiplexer.Connect(connectStr);
+            _db = db;
         }
 
         ~RedisIdempotentChecker()
         {
-            _redis.Dispose();
+            if (_redis != null)
+                _redis.Dispose();
         }
 
         public bool Check(string bizId, out byte[] data)
@@ -33,7 +40,7 @@ namespace Panda.DevUtil.Idempotent
                 data = null;
                 return false;
             }
-            var v = _redis.GetDatabase().StringGet(bizId);
+            var v = GetDB().StringGet(bizId);
             data = (byte[])v;
             return !v.IsNull;
         }
@@ -44,7 +51,7 @@ namespace Panda.DevUtil.Idempotent
             {
                 return new Tuple<bool, byte[]>(false, null);
             }
-            var v = await _redis.GetDatabase().StringGetAsync(bizId);
+            var v = await GetDB().StringGetAsync(bizId);
             return new Tuple<bool, byte[]>(!v.IsNull, (byte[])v);
         }
 
@@ -62,7 +69,7 @@ namespace Panda.DevUtil.Idempotent
             {
                 e = TimeSpan.FromSeconds(expire);
             }
-            return _redis.GetDatabase(0).StringSet(bizId, data, expiry: e);
+            return GetDB().StringSet(bizId, data, expiry: e);
         }
 
         public async Task<bool> SetAsync(string bizId, byte[] data, long expire = 0)
@@ -78,7 +85,12 @@ namespace Panda.DevUtil.Idempotent
             {
                 e = TimeSpan.FromSeconds(expire);
             }
-            return await _redis.GetDatabase().StringSetAsync(bizId, data, expiry: e);
+            return await GetDB().StringSetAsync(bizId, data, expiry: e);
+        }
+
+        private IDatabase GetDB()
+        {
+            return _redis.GetDatabase(_db);
         }
     }
 }

@@ -46,22 +46,14 @@ namespace Panda.DevUtil.Distributed
         public bool Get(string resourceId, int expire, out string lockId, GetLockOption option = null)
         {
             lockId = null;
-            if (string.IsNullOrEmpty(resourceId))
-                throw new ArgumentNullException("resourceId");
-            if (expire <= 0)
-                throw new ArgumentNullException("expire");
-            TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId(resourceId);
             bool got = false;
             bool firstGet = true;
-            bool retry = option != null && option.Retry;
+            bool retry = false;
             int retryInterval = 0;
             int retryTimeout = 0;
-            if (retry)
-            {
-                retryInterval = option.RetryInterval > 0 ? option.RetryInterval : 100;
-                retryTimeout = option.Timeout > 0 ? option.Timeout : 300;
-            }
+            CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
+            TimeSpan? e = TimeSpan.FromMilliseconds(expire);
+            string randomLockId = GetRandomLockId(resourceId);
             Stopwatch watch = Stopwatch.StartNew();
             var db = GetDB();
             do
@@ -76,9 +68,29 @@ namespace Panda.DevUtil.Distributed
             return got;
         }
 
-        public Task<Tuple<bool, string>> GetAsync(string resourceId, int expire, GetLockOption option = null)
+        public async Task<Tuple<bool, string>> GetAsync(string resourceId, int expire, GetLockOption option = null)
         {
-            throw new NotImplementedException();
+            string lockId = null;
+            bool got = false;
+            bool firstGet = true;
+            bool retry = false;
+            int retryInterval = 0;
+            int retryTimeout = 0;
+            CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
+            TimeSpan? e = TimeSpan.FromMilliseconds(expire);
+            string randomLockId = GetRandomLockId(resourceId);
+            Stopwatch watch = Stopwatch.StartNew();
+            var db = GetDB();
+            do
+            {
+                if (!firstGet)
+                    Thread.Sleep(retryInterval);
+                got = await db.StringSetAsync(resourceId, randomLockId, e, when: When.NotExists);
+                firstGet = false;
+            } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
+            if (got)
+                lockId = randomLockId;
+            return new Tuple<bool, string>(got,lockId);
         }
 
         public void Release(string resourceId, string lockId)
@@ -91,22 +103,47 @@ namespace Panda.DevUtil.Distributed
             db.ScriptEvaluate(_releaseLockScript, new { rid = resourceId, lid = lockId });
         }
 
-        public Task ReleaseAsync(string resourceId, string lockId)
+        public async Task ReleaseAsync(string resourceId, string lockId)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(resourceId))
+                return;
+            if (string.IsNullOrEmpty(lockId))
+                return;
+            var db = GetDB();
+            await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = resourceId, lid = lockId });
         }
 
         public ILockItem Using(string resourceId, int expire, GetLockOption option = null)
         {
-            throw new NotImplementedException();
+            string lockId = null;
+            Get(resourceId, expire, out lockId, option);
+            return new LockItem { ResourceId = resourceId, LockId = lockId, Lock = this };
         }
 
-        public Task<ILockItem> UsingAsync(string resourceId, int expire, GetLockOption option = null)
+        public async Task<ILockItem> UsingAsync(string resourceId, int expire, GetLockOption option = null)
         {
-            throw new NotImplementedException();
+            Tuple<bool, string> gotAndLockId = await GetAsync(resourceId, expire, option);
+            return new LockItem { ResourceId = resourceId, LockId = gotAndLockId.Item2, Lock = this };
         }
 
-        private static void InitEnviroment()
+        void CheckGetArgument(string resourceId, int expire, GetLockOption option, out bool retry, out int retryInterval, out int timeout)
+        {
+            retry = false;
+            retryInterval = 0;
+            timeout = 0;
+            if (string.IsNullOrEmpty(resourceId))
+                throw new ArgumentNullException("resourceId");
+            if (expire <= 0)
+                throw new ArgumentNullException("expire");
+            retry = option != null && option.Retry;
+            if (retry)
+            {
+                retryInterval = option.GetCorrectRetryInterval();
+                timeout = option.GetCorrectTimeout();
+            }
+        }
+
+        static void InitEnviroment()
         {
             DateTime now = DateTime.Now;
             _initTime = now.Hour * 60 * 60 + now.Minute * 60 + now.Second;
@@ -119,7 +156,7 @@ namespace Panda.DevUtil.Distributed
             _lockIdPerfix = string.Format("{0}{1}{2}", _serverIP, _processId, _initTime);
         }
 
-        private IDatabase GetDB()
+        IDatabase GetDB()
         {
             InitRedis();
             if (_redis == null)
@@ -127,7 +164,7 @@ namespace Panda.DevUtil.Distributed
             return _redis.GetDatabase(_db);
         }
 
-        private void InitRedis()
+        void InitRedis()
         {
             if (_redis == null && _lastConnectExceptionTime.AddMinutes(1) < DateTime.Now)
             {
@@ -137,13 +174,11 @@ namespace Panda.DevUtil.Distributed
                     {
                         _redis = ConnectionMultiplexer.Connect(_connectStr);
                         string script = "if redis.call(\"GET\",@rid) == @lid then redis.call(\"DEL\",@rid) end";
+                        LuaScript luaScript = LuaScript.Prepare(script);
                         ConfigurationOptions options = ConfigurationOptions.Parse(_connectStr);
                         options.SetDefaultPorts();
                         EndPoint point = options.EndPoints[0];
                         var server = _redis.GetServer(options.EndPoints[0]);
-                        if (server.ScriptExists(script))
-                            return;
-                        LuaScript luaScript = LuaScript.Prepare(script);
                         _releaseLockScript = luaScript.Load(server);
                     }
                     catch
@@ -164,7 +199,7 @@ namespace Panda.DevUtil.Distributed
         /// 标识资源的持有者，防止资源锁被非持有者错误释放
         /// {服务器IP}{进程Id}{初始化时间戳}{全局计数器}
         /// </remarks>
-        private string GetRandomLockId(string resourceId)
+        string GetRandomLockId(string resourceId)
         {
             int c = Interlocked.Increment(ref _count);
             return string.Format("{0}{1}", _lockIdPerfix, c);

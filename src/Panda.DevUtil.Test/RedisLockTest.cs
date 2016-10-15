@@ -21,7 +21,7 @@ namespace Panda.DevUtil.Test
         [Test]
         public void GetTest()
         {
-            string resourceId = DateTime.Now.ToString();
+            string resourceId = GetResourceId();
             string lockId = null;
             int expire = 100;
             bool locked = _lock.Get(resourceId, expire, out lockId);
@@ -43,7 +43,7 @@ namespace Panda.DevUtil.Test
         [Test]
         public void RetryGetTest()
         {
-            string resourceId = DateTime.Now.ToString();
+            string resourceId = GetResourceId();
             string lockId = null;
             int expire = 100;
             bool locked = _lock.Get(resourceId, expire, out lockId);
@@ -59,7 +59,7 @@ namespace Panda.DevUtil.Test
         [Test]
         public void ReleaseTest()
         {
-            string resourceId = DateTime.Now.ToString();
+            string resourceId = GetResourceId();
             string lockId = "lockId";
             int expire = 100;
 
@@ -79,6 +79,38 @@ namespace Panda.DevUtil.Test
             string lockId3 = null;
             bool locked3 = _lock.Get(resourceId, expire, out lockId3);
             Assert.IsTrue(locked3, "locked3 failed");
+        }
+
+        [Test]
+        public void UsingTest()
+        {
+            string resourceId = GetResourceId();
+            int expire = 100;
+            using (var lockItem = _lock.Using(resourceId, expire))
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(lockItem.LockId),"lockId empty");
+            }
+        }
+
+        [Test]
+        public async Task RetryGetAsyncTest()
+        {
+            string resourceId = GetResourceId();
+            int expire = 50;
+            var gotAndLockItem = await _lock.GetAsync(resourceId, expire);
+            Assert.IsTrue(!string.IsNullOrEmpty(gotAndLockItem.Item2), "lockId empty");
+            Assert.IsTrue(gotAndLockItem.Item1, "locked failed");
+
+            var locked1 = await _lock.GetAsync(resourceId, expire, new Distributed.Abstract.GetLockOption { Retry = true, Timeout = 100 });
+            Assert.IsTrue(locked1.Item1, "locked1 failed");
+            Assert.IsTrue(!string.IsNullOrEmpty(locked1.Item2), "lockId1 empty");
+        }
+
+        static int _count;
+        private string GetResourceId()
+        {
+            int count = Interlocked.Increment(ref _count);
+            return string.Format("{0}{1}", DateTime.Now, count);
         }
     }
 }

@@ -11,6 +11,8 @@ namespace Panda.DevUtil.Distributed.Abstract
     /// </summary>
     public class GetLockOption
     {
+        public const int DefaultTimeout = 300;
+        public const int DefaultRetryInterval = 100;
         /// <summary>
         /// 是否失败重试
         /// </summary>
@@ -30,6 +32,16 @@ namespace Panda.DevUtil.Distributed.Abstract
         {
             get { throw new NotImplementedException(); }
             set { throw new NotImplementedException(); }
+        }
+
+        public int GetCorrectRetryInterval()
+        {
+            return RetryInterval > 0 ? RetryInterval : DefaultRetryInterval;
+        }
+
+        public int GetCorrectTimeout()
+        {
+            return Timeout > 0 ? Timeout : DefaultTimeout;
         }
     }
 

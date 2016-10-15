@@ -1,5 +1,5 @@
 language: csharp
-solution: Panda.DevUtil.sln
+solution: ./src/Panda.DevUtil.sln
 script:
   - xbuild /p:Configuration=Release ./src/Panda.DevUtil.sln
   - mono ./src/packages/NUnit.ConsoleRunner.*/tools/nunit3-console.exe ./src/Panda.DevUtil.Test/bin/Release/Panda.DevUtil.Test.dll

@@ -14,13 +14,60 @@ namespace Panda.DevUtil.Distributed
             ILockItem lockItem = null;
             try
             {
-                lockItem = locker.Using(resourceId, expire, option);
+                lockItem = new IgnoreExceptionLockItem(locker.Using(resourceId, expire, option));
             }
             catch
             {
                 lockItem = new LockItem() { ResourceId = resourceId, LockId = "exception" };
             }
             return lockItem;
+        }
+
+        public class IgnoreExceptionLockItem : ILockItem
+        {
+            internal IgnoreExceptionLockItem(ILockItem item)
+            {
+                if (item == null)
+                    throw new ArgumentNullException("item");
+                Item = item;
+            }
+
+            internal ILockItem Item { get; set; }
+
+            public string LockId
+            {
+                get
+                {
+                    return Item.LockId;
+                }
+
+                set
+                {
+                    Item.LockId = value;
+                }
+            }
+
+            public string ResourceId
+            {
+                get
+                {
+                    return Item.ResourceId;
+                }
+
+                set
+                {
+                    Item.ResourceId = value;
+                }
+            }
+
+            public void Dispose()
+            {
+                try
+                {
+                    Item.Dispose();
+                }
+                catch { }
+            }
         }
     }
 }

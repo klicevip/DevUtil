@@ -40,7 +40,7 @@ namespace Panda.DevUtil.Idempotent
                 data = null;
                 return false;
             }
-            var v = GetDB().StringGet(bizId);
+            var v = GetDB().StringGet(GetRedisKey(bizId));
             data = (byte[])v;
             return !v.IsNull;
         }
@@ -51,7 +51,7 @@ namespace Panda.DevUtil.Idempotent
             {
                 return new Tuple<bool, byte[]>(false, null);
             }
-            var v = await GetDB().StringGetAsync(bizId);
+            var v = await GetDB().StringGetAsync(GetRedisKey(bizId));
             return new Tuple<bool, byte[]>(!v.IsNull, (byte[])v);
         }
 
@@ -69,7 +69,7 @@ namespace Panda.DevUtil.Idempotent
             {
                 e = TimeSpan.FromSeconds(expire);
             }
-            return GetDB().StringSet(bizId, data, expiry: e);
+            return GetDB().StringSet(GetRedisKey(bizId), data, expiry: e);
         }
 
         public async Task<bool> SetAsync(string bizId, byte[] data, long expire = 0)
@@ -85,12 +85,17 @@ namespace Panda.DevUtil.Idempotent
             {
                 e = TimeSpan.FromSeconds(expire);
             }
-            return await GetDB().StringSetAsync(bizId, data, expiry: e);
+            return await GetDB().StringSetAsync(GetRedisKey(bizId), data, expiry: e);
         }
 
-        private IDatabase GetDB()
+        IDatabase GetDB()
         {
             return _redis.GetDatabase(_db);
+        }
+
+        string GetRedisKey(string bizId)
+        {
+            return string.Format("ic_{0}", bizId);
         }
     }
 }

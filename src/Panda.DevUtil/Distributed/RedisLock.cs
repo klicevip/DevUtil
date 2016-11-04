@@ -53,14 +53,14 @@ namespace Panda.DevUtil.Distributed
             int retryTimeout = 0;
             CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
             TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId(resourceId);
+            string randomLockId = GetRandomLockId();
             Stopwatch watch = Stopwatch.StartNew();
             var db = GetDB();
             do
             {
                 if (!firstGet)
                     Thread.Sleep(retryInterval);
-                got = db.StringSet(resourceId, randomLockId, e, when: When.NotExists);
+                got = db.StringSet(GetRedisLockKey(resourceId), randomLockId, e, when: When.NotExists);
                 firstGet = false;
             } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
             if (got)
@@ -78,19 +78,19 @@ namespace Panda.DevUtil.Distributed
             int retryTimeout = 0;
             CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
             TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId(resourceId);
+            string randomLockId = GetRandomLockId();
             Stopwatch watch = Stopwatch.StartNew();
             var db = GetDB();
             do
             {
                 if (!firstGet)
                     Thread.Sleep(retryInterval);
-                got = await db.StringSetAsync(resourceId, randomLockId, e, when: When.NotExists);
+                got = await db.StringSetAsync(GetRedisLockKey(resourceId), randomLockId, e, when: When.NotExists);
                 firstGet = false;
             } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
             if (got)
                 lockId = randomLockId;
-            return new Tuple<bool, string>(got,lockId);
+            return new Tuple<bool, string>(got, lockId);
         }
 
         public void Release(string resourceId, string lockId)
@@ -100,7 +100,7 @@ namespace Panda.DevUtil.Distributed
             if (string.IsNullOrEmpty(lockId))
                 return;
             var db = GetDB();
-            db.ScriptEvaluate(_releaseLockScript, new { rid = resourceId, lid = lockId });
+            db.ScriptEvaluate(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
         }
 
         public async Task ReleaseAsync(string resourceId, string lockId)
@@ -110,7 +110,7 @@ namespace Panda.DevUtil.Distributed
             if (string.IsNullOrEmpty(lockId))
                 return;
             var db = GetDB();
-            await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = resourceId, lid = lockId });
+            await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
         }
 
         public ILockItem Using(string resourceId, int expire, GetLockOption option = null)
@@ -193,16 +193,20 @@ namespace Panda.DevUtil.Distributed
         /// <summary>
         /// 生成随机锁Id
         /// </summary>
-        /// <param name="resourceId"></param>
         /// <returns></returns>
         /// <remarks>
         /// 标识资源的持有者，防止资源锁被非持有者错误释放
         /// {服务器IP}{进程Id}{初始化时间戳}{全局计数器}
         /// </remarks>
-        string GetRandomLockId(string resourceId)
+        string GetRandomLockId()
         {
             int c = Interlocked.Increment(ref _count);
             return string.Format("{0}{1}", _lockIdPerfix, c);
+        }
+
+        string GetRedisLockKey(string resourceId)
+        {
+            return string.Format("l_{0}", resourceId);
         }
     }
 }

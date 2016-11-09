@@ -5,7 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+#if !dotnetcore
 using System.Configuration;
+#endif
 
 namespace Panda.DevUtil.Idempotent
 {
@@ -13,10 +15,11 @@ namespace Panda.DevUtil.Idempotent
     {
         ConnectionMultiplexer _redis = null;
         int _db = 0;
+#if !dotnetcore
         public RedisIdempotentChecker() : this(ConfigurationManager.AppSettings["redis"])
         {
         }
-
+#endif
         public RedisIdempotentChecker(string connectStr) : this(connectStr, 0)
         {
         }

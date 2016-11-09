@@ -7,3 +7,5 @@ obj
 log
 *.pubxml
 *.vs
+
+*project.lock.json

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0-*",
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "NUnit": "3.4.1",
+    "NUnit.Console": "3.4.1",
+    "NUnit.ConsoleRunner": "3.4.1",
+    "NUnit.Extension.NUnitProjectLoader": "3.4.1",
+    "NUnit.Extension.NUnitV2Driver": "3.4.1",
+    "NUnit.Extension.NUnitV2ResultWriter": "3.4.1",
+    "NUnit.Extension.TeamCityEventListener": "1.0.1",
+    "NUnit.Extension.VSProjectLoader": "3.4.1",
+    "NUnit.Runners": "3.4.1",
+    "Panda.DevUtil": "1.0.0-*"
+  },
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    }
+  },
+  "buildOptions": {
+    "define": [ "dotnetcore" ]
+  }
+}

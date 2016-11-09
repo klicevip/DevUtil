@@ -3,7 +3,9 @@ using StackExchange.Redis;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if !dotnetcore
 using System.Configuration;
+#endif
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -34,8 +36,9 @@ namespace Panda.DevUtil.Distributed
         string _connectStr = null;
         DateTime _lastConnectExceptionTime = DateTime.MinValue;
         LoadedLuaScript _releaseLockScript = null;
-
+#if !dotnetcore
         public RedisLock() : this(ConfigurationManager.AppSettings["redis"]) { }
+#endif
         public RedisLock(string connectStr) : this(connectStr, 0) { }
         public RedisLock(string connectStr, int db)
         {
@@ -150,7 +153,11 @@ namespace Panda.DevUtil.Distributed
             _processId = Process.GetCurrentProcess().Id;
 
             string hostname = Dns.GetHostName();//得到本机名   
+#if dotnetcore
+            IPHostEntry localhost = Dns.GetHostEntryAsync(hostname).Result;
+#else
             IPHostEntry localhost = Dns.GetHostEntry(hostname);
+#endif
             IPAddress localaddr = localhost.AddressList[0];
             _serverIP = localaddr.GetHashCode();
             _lockIdPerfix = string.Format("{0}{1}{2}", _serverIP, _processId, _initTime);

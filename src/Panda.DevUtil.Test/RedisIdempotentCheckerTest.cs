@@ -16,7 +16,11 @@ namespace Panda.DevUtil.Test
         [SetUp]
         public void Startup()
         {
+#if dotnetcore
+            _checker = new RedisIdempotentChecker("127.0.0.1");
+#else
             _checker = new RedisIdempotentChecker();
+#endif
         }
         [Test]
         public void CheckTest()

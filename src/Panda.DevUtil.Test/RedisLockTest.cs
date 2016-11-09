@@ -16,7 +16,11 @@ namespace Panda.DevUtil.Test
         [SetUp]
         public void Startup()
         {
+#if dotnetcore
+            _lock = new RedisLock("127.0.0.1");
+#else
             _lock = new RedisLock();
+#endif
         }
         [Test]
         public void GetTest()

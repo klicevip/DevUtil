@@ -49,6 +49,7 @@
     <Compile Include="Distributed\Abstract\GetLockOption.cs" />
     <Compile Include="Distributed\Abstract\ILock.cs" />
     <Compile Include="Distributed\Abstract\ILockItem.cs" />
+    <Compile Include="Distributed\LockBiz.cs" />
     <Compile Include="Distributed\LockExtension.cs" />
     <Compile Include="Distributed\LockItem.cs" />
     <Compile Include="Distributed\RedisLock.cs" />

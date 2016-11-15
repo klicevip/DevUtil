@@ -17,25 +17,13 @@ namespace Panda.DevUtil.Distributed
 {
     public class RedisLock : ILock
     {
-
-        //[ThreadStaticAttribute]
-        //static Dictionary<string, string> threadLockDict = new Dictionary<string, string>();
-        static int _initTime = 0;
-        static int _processId = 0;
-        static int _serverIP = 0;
-        static int _count = 0;
-        static string _lockIdPerfix = null;
-
-        static RedisLock()
-        {
-            InitEnviroment();
-        }
-
         ConnectionMultiplexer _redis = null;
         int _db = 0;
         string _connectStr = null;
         DateTime _lastConnectExceptionTime = DateTime.MinValue;
         LoadedLuaScript _releaseLockScript = null;
+        LockBiz _biz = null;
+
 #if !dotnetcore
         public RedisLock() : this(ConfigurationManager.AppSettings["redis"]) { }
 #endif
@@ -44,123 +32,65 @@ namespace Panda.DevUtil.Distributed
         {
             _connectStr = connectStr;
             _db = db;
+            _biz = new LockBiz();
+            _biz._insertFunc = Insert;
+            _biz._insertAsyncFunc = InsertAsync;
+            _biz._deleteAction = Delete;
+            _biz._deleteAsyncAction = DeleteAsync;
         }
 
         public bool Get(string resourceId, int expire, out string lockId, GetLockOption option = null)
         {
-            lockId = null;
-            bool got = false;
-            bool firstGet = true;
-            bool retry = false;
-            int retryInterval = 0;
-            int retryTimeout = 0;
-            CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
-            TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId();
-            Stopwatch watch = Stopwatch.StartNew();
-            var db = GetDB();
-            do
-            {
-                if (!firstGet)
-                    Thread.Sleep(retryInterval);
-                got = db.StringSet(GetRedisLockKey(resourceId), randomLockId, e, when: When.NotExists);
-                firstGet = false;
-            } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
-            if (got)
-                lockId = randomLockId;
-            return got;
+            return _biz.Get(resourceId, expire, out lockId, option);
         }
 
         public async Task<Tuple<bool, string>> GetAsync(string resourceId, int expire, GetLockOption option = null)
         {
-            string lockId = null;
-            bool got = false;
-            bool firstGet = true;
-            bool retry = false;
-            int retryInterval = 0;
-            int retryTimeout = 0;
-            CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
-            TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId();
-            Stopwatch watch = Stopwatch.StartNew();
-            var db = GetDB();
-            do
-            {
-                if (!firstGet)
-                    Thread.Sleep(retryInterval);
-                got = await db.StringSetAsync(GetRedisLockKey(resourceId), randomLockId, e, when: When.NotExists);
-                firstGet = false;
-            } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
-            if (got)
-                lockId = randomLockId;
-            return new Tuple<bool, string>(got, lockId);
+            return await _biz.GetAsync(resourceId, expire, option);
         }
 
         public void Release(string resourceId, string lockId)
         {
-            if (string.IsNullOrEmpty(resourceId))
-                return;
-            if (string.IsNullOrEmpty(lockId))
-                return;
-            var db = GetDB();
-            db.ScriptEvaluate(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+            _biz.Release(resourceId, lockId);
         }
 
         public async Task ReleaseAsync(string resourceId, string lockId)
         {
-            if (string.IsNullOrEmpty(resourceId))
-                return;
-            if (string.IsNullOrEmpty(lockId))
-                return;
-            var db = GetDB();
-            await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+            await _biz.ReleaseAsync(resourceId, lockId);
         }
 
         public ILockItem Using(string resourceId, int expire, GetLockOption option = null)
         {
-            string lockId = null;
-            Get(resourceId, expire, out lockId, option);
-            return new LockItem { ResourceId = resourceId, LockId = lockId, Lock = this };
+            return _biz.Using(resourceId, expire, option);
         }
 
         public async Task<ILockItem> UsingAsync(string resourceId, int expire, GetLockOption option = null)
         {
-            Tuple<bool, string> gotAndLockId = await GetAsync(resourceId, expire, option);
-            return new LockItem { ResourceId = resourceId, LockId = gotAndLockId.Item2, Lock = this };
+            return await _biz.UsingAsync(resourceId, expire, option);
         }
 
-        void CheckGetArgument(string resourceId, int expire, GetLockOption option, out bool retry, out int retryInterval, out int timeout)
+        bool Insert(bool firstTry, string resourceId, string randomLockId, int expire)
         {
-            retry = false;
-            retryInterval = 0;
-            timeout = 0;
-            if (string.IsNullOrEmpty(resourceId))
-                throw new ArgumentNullException("resourceId");
-            if (expire <= 0)
-                throw new ArgumentNullException("expire");
-            retry = option != null && option.Retry;
-            if (retry)
-            {
-                retryInterval = option.GetCorrectRetryInterval();
-                timeout = option.GetCorrectTimeout();
-            }
+            var db = GetDB();
+            return db.StringSet(GetRedisLockKey(resourceId), randomLockId, TimeSpan.FromMilliseconds(expire), when: When.NotExists);
         }
 
-        static void InitEnviroment()
+        async Task<bool> InsertAsync(bool firstTry, string resourceId, string randomLockId, int expire)
         {
-            DateTime now = DateTime.Now;
-            _initTime = now.Hour * 60 * 60 + now.Minute * 60 + now.Second;
-            _processId = Process.GetCurrentProcess().Id;
+            var db = GetDB();
+            return await db.StringSetAsync(GetRedisLockKey(resourceId), randomLockId, TimeSpan.FromMilliseconds(expire), when: When.NotExists);
+        }
 
-            string hostname = Dns.GetHostName();//得到本机名   
-#if dotnetcore
-            IPHostEntry localhost = Dns.GetHostEntryAsync(hostname).Result;
-#else
-            IPHostEntry localhost = Dns.GetHostEntry(hostname);
-#endif
-            IPAddress localaddr = localhost.AddressList[0];
-            _serverIP = localaddr.GetHashCode();
-            _lockIdPerfix = string.Format("{0}{1}{2}", _serverIP, _processId, _initTime);
+        void Delete(string resourceId, string lockId)
+        {
+            var db = GetDB();
+            db.ScriptEvaluate(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+        }
+
+        async Task DeleteAsync(string resourceId, string lockId)
+        {
+            var db = GetDB();
+            await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
         }
 
         IDatabase GetDB()
@@ -195,20 +125,6 @@ namespace Panda.DevUtil.Distributed
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// 生成随机锁Id
-        /// </summary>
-        /// <returns></returns>
-        /// <remarks>
-        /// 标识资源的持有者，防止资源锁被非持有者错误释放
-        /// {服务器IP}{进程Id}{初始化时间戳}{全局计数器}
-        /// </remarks>
-        string GetRandomLockId()
-        {
-            int c = Interlocked.Increment(ref _count);
-            return string.Format("{0}{1}", _lockIdPerfix, c);
         }
 
         string GetRedisLockKey(string resourceId)

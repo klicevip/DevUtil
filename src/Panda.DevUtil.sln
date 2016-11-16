@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Panda.DevUtil", "Panda.DevUtil\Panda.DevUtil.csproj", "{CF7B0E03-5E5A-4C6C-8C91-6E0ACBC14148}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Panda.DevUtil.Test_fx45", "Panda.DevUtil.Test_fx45\Panda.DevUtil.Test_fx45.csproj", "{6186C0DD-FEE6-4FBE-A86E-36680AF36CD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Panda.DevUtil.Test", "Panda.DevUtil.Test\Panda.DevUtil.Test.csproj", "{D121EA7D-4E88-46E1-B1CA-342008280120}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Panda.DevUtil_fx45", "Panda.DevUtil_fx45\Panda.DevUtil_fx45.csproj", "{32E0EACF-E853-4F67-B906-607CAF357DDC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CF7B0E03-5E5A-4C6C-8C91-6E0ACBC14148}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF7B0E03-5E5A-4C6C-8C91-6E0ACBC14148}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF7B0E03-5E5A-4C6C-8C91-6E0ACBC14148}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF7B0E03-5E5A-4C6C-8C91-6E0ACBC14148}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D121EA7D-4E88-46E1-B1CA-342008280120}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D121EA7D-4E88-46E1-B1CA-342008280120}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D121EA7D-4E88-46E1-B1CA-342008280120}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D121EA7D-4E88-46E1-B1CA-342008280120}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6186C0DD-FEE6-4FBE-A86E-36680AF36CD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6186C0DD-FEE6-4FBE-A86E-36680AF36CD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6186C0DD-FEE6-4FBE-A86E-36680AF36CD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6186C0DD-FEE6-4FBE-A86E-36680AF36CD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32E0EACF-E853-4F67-B906-607CAF357DDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32E0EACF-E853-4F67-B906-607CAF357DDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32E0EACF-E853-4F67-B906-607CAF357DDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32E0EACF-E853-4F67-B906-607CAF357DDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,3 +5,4 @@ script:
   - mono ./src/packages/NUnit.ConsoleRunner.*/tools/nunit3-console.exe ./src/Panda.DevUtil.Test_fx45/bin/Release/Panda.DevUtil.Test.dll
 services:
   - redis-server
+  - mongodb

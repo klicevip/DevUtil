@@ -13,7 +13,7 @@ namespace Panda.DevUtil.Test
         [SetUp]
         public override void Startup()
         {
-            _lock = new MongoLock("mongodb://muser:1qaz2wsx@218.244.136.30:27018/", "devutiltest");
+            _lock = new MongoLock("mongodb://127.0.0.1/", "devutiltest");
         }
     }
 }

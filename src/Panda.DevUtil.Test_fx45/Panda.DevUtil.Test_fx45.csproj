@@ -44,6 +44,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Panda.DevUtil.Test\ILockTest.cs">
+      <Link>ILockTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Panda.DevUtil.Test\MongoLockTest.cs">
+      <Link>MongoLockTest.cs</Link>
+    </Compile>
     <Compile Include="..\Panda.DevUtil.Test\RedisIdempotentCheckerTest.cs">
       <Link>RedisIdempotentCheckerTest.cs</Link>
     </Compile>

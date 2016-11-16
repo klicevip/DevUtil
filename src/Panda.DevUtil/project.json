@@ -1,6 +1,7 @@
-﻿{
+{
   "version": "1.0.0-*",
   "dependencies": {
+    "MongoDB.Driver": "2.3.0",
     "NETStandard.Library": "1.6.0",
     "StackExchange.Redis": "1.1.605",
     "System.Diagnostics.Process": "4.1.0"

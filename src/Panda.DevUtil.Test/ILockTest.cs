@@ -14,6 +14,8 @@ namespace Panda.DevUtil.Test
     {
         protected ILock _lock = null;
 
+        protected string _lockName = null;
+
         public abstract void Startup();
 
         [Test]
@@ -35,8 +37,8 @@ namespace Panda.DevUtil.Test
             Thread.Sleep(expire);
             string lockId2 = null;
             bool locked2 = _lock.Get(resourceId, expire, out lockId2);
-            Assert.IsTrue(!string.IsNullOrEmpty(lockId2), "lockId2 empty");
-            Assert.IsTrue(locked2, "locked2 failed");
+            Assert.IsTrue(!string.IsNullOrEmpty(lockId2), _lockName + "lockId2 empty");
+            Assert.IsTrue(locked2, _lockName + "locked2 failed");
         }
 
         [Test]
@@ -46,13 +48,13 @@ namespace Panda.DevUtil.Test
             string lockId = null;
             int expire = 100;
             bool locked = _lock.Get(resourceId, expire, out lockId);
-            Assert.IsTrue(!string.IsNullOrEmpty(lockId), "lockId empty");
-            Assert.IsTrue(locked, "locked failed");
+            Assert.IsTrue(!string.IsNullOrEmpty(lockId), _lockName + "lockId empty");
+            Assert.IsTrue(locked, _lockName + "locked failed");
 
             string lockId1 = null;
             bool locked1 = _lock.Get(resourceId, expire, out lockId1, new Distributed.Abstract.GetLockOption { Retry = true, Timeout = 200 });
-            Assert.IsTrue(locked1, "locked1 failed");
-            Assert.IsTrue(!string.IsNullOrEmpty(lockId1), "lockId1 empty");
+            Assert.IsTrue(locked1, _lockName + "locked1 failed");
+            Assert.IsTrue(!string.IsNullOrEmpty(lockId1), _lockName + "lockId1 empty");
         }
 
         [Test]
@@ -66,18 +68,17 @@ namespace Panda.DevUtil.Test
 
             string lockId1 = null;
             bool locked = _lock.Get(resourceId, expire, out lockId1);
-            Assert.IsTrue(locked, "locked failed");
+            Assert.IsTrue(locked, _lockName + "locked failed");
 
             string lockId2 = null;
             _lock.Release(resourceId, lockId);
             bool locked2 = _lock.Get(resourceId, expire, out lockId2);
-            Assert.IsFalse(locked2, "locked2 failed");
+            Assert.IsFalse(locked2, _lockName + "locked2 failed");
 
             _lock.Release(resourceId, lockId1);
-
             string lockId3 = null;
             bool locked3 = _lock.Get(resourceId, expire, out lockId3);
-            Assert.IsTrue(locked3, "locked3 failed");
+            Assert.IsTrue(locked3, _lockName + "locked3 failed");
         }
 
         [Test]
@@ -87,7 +88,7 @@ namespace Panda.DevUtil.Test
             int expire = 100;
             using (var lockItem = _lock.Using(resourceId, expire))
             {
-                Assert.IsFalse(string.IsNullOrEmpty(lockItem.LockId), "lockId empty");
+                Assert.IsFalse(string.IsNullOrEmpty(lockItem.LockId), _lockName + "lockId empty");
             }
         }
 
@@ -97,12 +98,12 @@ namespace Panda.DevUtil.Test
             string resourceId = GetResourceId();
             int expire = 50;
             var gotAndLockItem = await _lock.GetAsync(resourceId, expire);
-            Assert.IsTrue(!string.IsNullOrEmpty(gotAndLockItem.Item2), "lockId empty");
-            Assert.IsTrue(gotAndLockItem.Item1, "locked failed");
+            Assert.IsTrue(!string.IsNullOrEmpty(gotAndLockItem.Item2), _lockName + "lockId empty");
+            Assert.IsTrue(gotAndLockItem.Item1, _lockName + "locked failed");
 
             var locked1 = await _lock.GetAsync(resourceId, expire, new Distributed.Abstract.GetLockOption { Retry = true, Timeout = 100 });
-            Assert.IsTrue(locked1.Item1, "locked1 failed");
-            Assert.IsTrue(!string.IsNullOrEmpty(locked1.Item2), "lockId1 empty");
+            Assert.IsTrue(locked1.Item1, _lockName + "locked1 failed");
+            Assert.IsTrue(!string.IsNullOrEmpty(locked1.Item2), _lockName + "lockId1 empty");
         }
 
         static int _count;

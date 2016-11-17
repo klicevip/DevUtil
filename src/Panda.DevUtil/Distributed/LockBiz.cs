@@ -12,11 +12,11 @@ namespace Panda.DevUtil.Distributed
 {
     internal class LockBiz : ILock
     {
-        static int _initTime = 0;
-        static int _processId = 0;
-        static int _serverIP = 0;
-        static int _count = 0;
-        static string _lockIdPerfix = null;
+        internal static int _initTime = 0;
+        internal static int _processId = 0;
+        internal static int _serverIP = 0;
+        internal static int _count = 0;
+        internal static string _lockIdPerfix = null;
         static LockBiz()
         {
             InitEnviroment();
@@ -26,7 +26,7 @@ namespace Panda.DevUtil.Distributed
         internal Func<bool, string, string, int, Task<bool>> _insertAsyncFunc;
         internal Action<string, string> _deleteAction;
         internal Func<string, string, Task> _deleteAsyncAction;
-        
+        internal Func<string, int, string> _generateLockIdFunc;
 
         public bool Get(string resourceId, int expire, out string lockId, GetLockOption option = null)
         {
@@ -38,12 +38,16 @@ namespace Panda.DevUtil.Distributed
             int retryTimeout = 0;
             CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
             TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId();
+            string randomLockId = null;
+            if (_generateLockIdFunc == null)
+                randomLockId = GetRandomLockId(resourceId, expire);
             Stopwatch watch = Stopwatch.StartNew();
             do
             {
                 if (!firstGet)
                     Thread.Sleep(retryInterval);
+                if (_generateLockIdFunc != null)
+                    randomLockId = GetRandomLockId(resourceId, expire);
                 got = _insertFunc(firstGet, resourceId, randomLockId, expire);
                 firstGet = false;
             } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
@@ -62,12 +66,16 @@ namespace Panda.DevUtil.Distributed
             int retryTimeout = 0;
             CheckGetArgument(resourceId, expire, option, out retry, out retryInterval, out retryTimeout);
             TimeSpan? e = TimeSpan.FromMilliseconds(expire);
-            string randomLockId = GetRandomLockId();
+            string randomLockId = null;
+            if (_generateLockIdFunc == null)
+                randomLockId = GetRandomLockId(resourceId, expire);
             Stopwatch watch = Stopwatch.StartNew();
             do
             {
                 if (!firstGet)
                     Thread.Sleep(retryInterval);
+                if (_generateLockIdFunc != null)
+                    randomLockId = GetRandomLockId(resourceId, expire);
                 got = await _insertAsyncFunc(firstGet, resourceId, randomLockId, expire);
                 firstGet = false;
             } while (!got && retry && watch.ElapsedMilliseconds < retryTimeout);
@@ -132,8 +140,10 @@ namespace Panda.DevUtil.Distributed
         /// 标识资源的持有者，防止资源锁被非持有者错误释放
         /// {服务器IP}{进程Id}{初始化时间戳}{全局计数器}
         /// </remarks>
-        string GetRandomLockId()
+        string GetRandomLockId(string resourceId, int expire)
         {
+            if (_generateLockIdFunc != null)
+                return _generateLockIdFunc(resourceId, expire);
             int c = Interlocked.Increment(ref _count);
             return string.Format("{0}{1}", _lockIdPerfix, c);
         }

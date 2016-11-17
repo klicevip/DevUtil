@@ -23,20 +23,30 @@ namespace Panda.DevUtil.Distributed
         DateTime _lastConnectExceptionTime = DateTime.MinValue;
         LoadedLuaScript _releaseLockScript = null;
         LockBiz _biz = null;
+        bool _useScript = false;
 
-#if !dotnetcore
+        string _timeLockIdPerfix = null;
+
+#if dotnetcore
+        
+#else
         public RedisLock() : this(ConfigurationManager.AppSettings["redis"]) { }
 #endif
         public RedisLock(string connectStr) : this(connectStr, 0) { }
-        public RedisLock(string connectStr, int db)
+        public RedisLock(string connectStr, int db) : this(connectStr, db, false) { }
+        public RedisLock(string connectStr, int db, bool useScript)
         {
             _connectStr = connectStr;
             _db = db;
+            _useScript = useScript;
+
             _biz = new LockBiz();
             _biz._insertFunc = Insert;
             _biz._insertAsyncFunc = InsertAsync;
             _biz._deleteAction = Delete;
             _biz._deleteAsyncAction = DeleteAsync;
+            if (!useScript)
+                _biz._generateLockIdFunc = GenerateLockId;
         }
 
         public bool Get(string resourceId, int expire, out string lockId, GetLockOption option = null)
@@ -51,11 +61,15 @@ namespace Panda.DevUtil.Distributed
 
         public void Release(string resourceId, string lockId)
         {
+            if (_useScript == false && IsLockExpire(lockId))
+                return;
             _biz.Release(resourceId, lockId);
         }
 
         public async Task ReleaseAsync(string resourceId, string lockId)
         {
+            if (_useScript == false && IsLockExpire(resourceId))
+                return;
             await _biz.ReleaseAsync(resourceId, lockId);
         }
 
@@ -84,13 +98,44 @@ namespace Panda.DevUtil.Distributed
         void Delete(string resourceId, string lockId)
         {
             var db = GetDB();
-            db.ScriptEvaluate(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+            if (_useScript)
+                db.ScriptEvaluate(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+            else
+                db.KeyDelete(GetRedisLockKey(resourceId));
         }
 
         async Task DeleteAsync(string resourceId, string lockId)
         {
             var db = GetDB();
-            await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+            if (_useScript)
+                await db.ScriptEvaluateAsync(_releaseLockScript, new { rid = GetRedisLockKey(resourceId), lid = lockId });
+            else
+                await db.KeyDeleteAsync(GetRedisLockKey(resourceId));
+        }
+
+        string GenerateLockId(string resourceId, int expire)
+        {
+            if (string.IsNullOrEmpty(_timeLockIdPerfix))
+                _timeLockIdPerfix = string.Format("{0}{1}", LockBiz._serverIP, LockBiz._processId);
+            DateTime expireTime = DateTime.Now.AddMilliseconds(expire);
+            return string.Format("{0}{1}_{2}", _timeLockIdPerfix, resourceId, CommonUtil.GetTimeStampMillisecond(expireTime));
+        }
+
+        bool IsLockExpire(string lockId)
+        {
+            if (string.IsNullOrEmpty(lockId))
+                return true;
+            int i = lockId.LastIndexOf('_');
+            if (i < 0 || (i + 1) >= lockId.Length)
+                return true;
+            string timeStr = lockId.Substring(i + 1);
+            long stamp = 0;
+            if (!long.TryParse(timeStr, out stamp))
+                return true;
+            long nowStamp = CommonUtil.GetTimeStampMillisecond(DateTime.Now);
+            if (stamp <= nowStamp)
+                return true;
+            return false;
         }
 
         IDatabase GetDB()
@@ -110,13 +155,16 @@ namespace Panda.DevUtil.Distributed
                     try
                     {
                         _redis = ConnectionMultiplexer.Connect(_connectStr);
-                        string script = "if redis.call(\"GET\",@rid) == @lid then redis.call(\"DEL\",@rid) end";
-                        LuaScript luaScript = LuaScript.Prepare(script);
-                        ConfigurationOptions options = ConfigurationOptions.Parse(_connectStr);
-                        options.SetDefaultPorts();
-                        EndPoint point = options.EndPoints[0];
-                        var server = _redis.GetServer(options.EndPoints[0]);
-                        _releaseLockScript = luaScript.Load(server);
+                        if (_useScript)
+                        {
+                            string script = "if redis.call(\"GET\",@rid) == @lid then redis.call(\"DEL\",@rid) end";
+                            LuaScript luaScript = LuaScript.Prepare(script);
+                            ConfigurationOptions options = ConfigurationOptions.Parse(_connectStr);
+                            options.SetDefaultPorts();
+                            EndPoint point = options.EndPoints[0];
+                            var server = _redis.GetServer(options.EndPoints[0]);
+                            _releaseLockScript = luaScript.Load(server);
+                        }
                     }
                     catch
                     {

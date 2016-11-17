@@ -14,10 +14,26 @@ namespace Panda.DevUtil.Test
         [SetUp]
         public override void Startup()
         {
+            _lockName = "redislock,";
 #if dotnetcore
             _lock = new RedisLock("127.0.0.1");
 #else
             _lock = new RedisLock();
+#endif
+        }
+    }
+
+    [TestFixture]
+    public class UseScriptRedisLockTest : ILockTest
+    {
+        [SetUp]
+        public override void Startup()
+        {
+            _lockName = "usescriptredislock,";
+#if dotnetcore
+            _lock = new RedisLock("127.0.0.1");
+#else
+            _lock = new RedisLock("127.0.0.1", 0, true);
 #endif
         }
     }
